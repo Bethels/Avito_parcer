@@ -28,12 +28,18 @@ session.mount("https://", adapter)
 r = session.request('GET', url).text
 
 soup = BeautifulSoup(r, 'lxml')
-# print(soup.text)
 
 
-def get_adds(page: BeautifulSoup):
-    adv = page.find('div', attrs={'data-marker': 'item'}).text
-    print(adv)
+def get_last_ad(page: BeautifulSoup):
+    return page.find('div', attrs={'data-marker': 'item'})
 
 
-get_adds(soup)
+def get_values(ad: BeautifulSoup):
+    header = ad.find('h3', attrs={'itemprop': 'name'}).text
+    price = ad.find('meta', attrs={'itemprop': 'price'})['content']  # доступ к содержимому атрибута
+    link = f"https://www.avito.ru{ad.find('a')['href']}"
+    picture = ad.find('img', attrs={'itemprop': 'image'})['src']
+    return {"header": header, "price": price, "link": link, "image": picture}
+
+
+get_values(get_last_ad(soup))
