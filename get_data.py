@@ -8,8 +8,8 @@ from bs4 import BeautifulSoup
 
 CIPHERS = """ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES256
              -SHA384:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-SHA256:AES256-SHA """
-url = 'https://www.avito.ru/moskva/tovary_dlya_kompyutera/komplektuyuschie/videokarty-ASgBAgICAkTGB~pm7gmmZw?cd=1&q' \
-      '=rtx+3070&s=104 '
+url = 'https://www.avito.ru/moskva/tovary_dlya_kompyutera/komplektuyuschie/videokarty-ASgBAgICAkTGB~pm7gmmZw?cd=1&q=rtx+3070&s=104 '
+
 
 class TlsAdapter(HTTPAdapter):
 
@@ -25,9 +25,15 @@ class TlsAdapter(HTTPAdapter):
 session = requests.session()
 adapter = TlsAdapter(ssl.OP_NO_TLSv1 | ssl.OP_NO_TLSv1_1)
 session.mount("https://", adapter)
+r = session.request('GET', url).text
 
-try:
-    r = session.request('GET', url)
-    print(r.text)
-except Exception as exception:
-    print(exception)
+soup = BeautifulSoup(r, 'lxml')
+# print(soup.text)
+
+
+def get_adds(page: BeautifulSoup):
+    adv = page.find('div', attrs={'data-marker': 'item'}).text
+    print(adv)
+
+
+get_adds(soup)
