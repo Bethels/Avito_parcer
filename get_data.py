@@ -6,9 +6,9 @@ from urllib3.poolmanager import PoolManager
 from urllib3.util import ssl_
 from bs4 import BeautifulSoup
 
+
 CIPHERS = """ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES256
              -SHA384:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-SHA256:AES256-SHA """
-url = 'https://www.avito.ru/moskva/tovary_dlya_kompyutera/komplektuyuschie/videokarty-ASgBAgICAkTGB~pm7gmmZw?cd=1&q=rtx+3070&s=104 '
 
 
 class TlsAdapter(HTTPAdapter):
@@ -25,21 +25,27 @@ class TlsAdapter(HTTPAdapter):
 session = requests.session()
 adapter = TlsAdapter(ssl.OP_NO_TLSv1 | ssl.OP_NO_TLSv1_1)
 session.mount("https://", adapter)
-r = session.request('GET', url).text
-
-soup = BeautifulSoup(r, 'lxml')
 
 
-def get_last_ad(page: BeautifulSoup):
-    return page.find('div', attrs={'data-marker': 'item'})
+def extract_name_from_url(link):
+    return link[(link.find('&q') + 3):link.find('&s')].replace('+', ' ')
 
 
-def get_values(ad: BeautifulSoup):
+def get_last_ad(url, limit=1):
+    r = session.request('GET', url, headers={'Referer': 'https://www.avito.ru'}).text
+    # реквест работает только при такой записи, разбираться не пробовал
+    soup = BeautifulSoup(r, 'lxml')
+    match limit:
+        case 1:
+            return soup.find('div', attrs={'data-marker': 'item'})
+        case 0:
+            return soup.find_all('div', attrs={'data-marker': 'item'})
+
+
+def get_ad_values(ad: BeautifulSoup):  # возвращает словарь со значениями
     header = ad.find('h3', attrs={'itemprop': 'name'}).text
     price = ad.find('meta', attrs={'itemprop': 'price'})['content']  # доступ к содержимому атрибута
-    link = f"https://www.avito.ru{ad.find('a')['href']}"
+    url = f"https://www.avito.ru{ad.find('a')['href']}"
     picture = ad.find('img', attrs={'itemprop': 'image'})['src']
-    return {"header": header, "price": price, "link": link, "image": picture}
+    return {"header": header, "price": int(price), "link": url, "image": picture}
 
-
-get_values(get_last_ad(soup))
