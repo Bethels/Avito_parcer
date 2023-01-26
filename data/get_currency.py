@@ -15,20 +15,47 @@ def get_currency_table(day):
     return result
 
 
+def update_value(shops_list: dict):
+    not_updated = []
+    for i in shops_list:
+        if shops_list[i] == '-':
+            not_updated.append(i)
+    if not_updated:
+        prev_day = get_currency_table(2)
+        for i in not_updated:
+            shops_list[i] = prev_day[i]
+    return shops_list, not_updated
+
+
+def check_date(shops_list: dict):
+    day = 1
+    if shops_list["Дата"] != str(date.today()):
+        shops_list = get_currency_table(day + 1)
+
+    return shops_list
+
+
 def get_shops():
     day = 1
-    add = ''
-    shops = get_currency_table(day)
-    if shops["Дата"] != str(date.today()):
-        shops = get_currency_table(day + 1)
+    date_message = ''
+    shops_message = ''
+    shops_list = get_currency_table(day)
+    if shops_list["Дата"] != str(date.today()):
+        shops_list = get_currency_table(day + 1)
         add = '(за сегодня данных еще нет)'
-        # shops.pop("Дата")
-    shops = dict(sorted(shops.items(), key=lambda x: x[1]))
-    shops.pop("ЦБ РФ")
-    answer = f'И так, на {shops.pop("Дата")} {add}, самый выгодный магазин: <b>{list(shops.keys())[0]}</b> с курсом ' \
-             f'<b>{list(shops.values())[0]}</b> ₽. \n\n<b>Aliexpress</b> - <b> {shops["Aliexpress.ru"]}' \
-             f'</b> ₽.\n\n{central_bank()}\n\nВесь список в порядке возрастания курса выглядит следующим образом:\n\n'
-    for k, v in shops.items():
+        # shops_list.pop("Дата")
+    shops_list = dict(sorted(shops_list.items(), key=lambda x: x[1]))
+    check = update_value(shops_list)
+    shops_list = check[0]
+    if check[1]:
+        shops_message += f'Для следующих магазинов показаны данные за вчера (еще не обновились):   ' \
+                         f'{", ".join(map(str, check[1]))}\n\n '
+    shops_list.pop("ЦБ РФ")
+    answer = f'{shops_message}И так, на {shops_list.pop("Дата")} {date_message}, самый выгодный магазин: ' \
+             f'<b>{list(shops_list.keys())[0]}</b> с курсом  <b>{list(shops_list.values())[0]}</b> ₽. ' \
+             f'\n\n<b>Aliexpress</b> - <b> {shops_list["Aliexpress.ru"]} </b> ₽.\n\n{central_bank()}\n\nВесь список ' \
+             f'в порядке возрастания курса выглядит следующим образом:\n\n '
+    for k, v in shops_list.items():
         answer += f"-{k}:  {v} ₽\n"
     return answer
 
@@ -46,5 +73,5 @@ def central_bank():
         cb_date = table["Дата"]
         add = f'(последнее обновление за {cb_date}, скорее всего из-за выходных, ведь биржа простаивает)'
 
-    answer = f'Курс центробанка составляет {cb_rate}₽ ' + add
+    answer = f'Курс центробанка: <b>{cb_rate}₽</b> ' + add
     return answer
